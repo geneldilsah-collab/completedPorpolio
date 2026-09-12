@@ -367,7 +367,7 @@ async function boot() {
     $('#hero-canvas').innerHTML =
       `<div style="position:absolute;inset:0;display:grid;place-content:center">
          <h1 style="font-size:clamp(3rem,16vw,10rem);font-weight:900;letter-spacing:-.05em;margin:0;
-                    background:linear-gradient(90deg,#7dd3fc,#fff);-webkit-background-clip:text;
+                    background:linear-gradient(90deg,#0284c7,#13314f);-webkit-background-clip:text;
                     background-clip:text;color:transparent">${profile.particleWord}</h1>
        </div>`;
   }

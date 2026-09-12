@@ -7,18 +7,15 @@
  */
 
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const COUNT = 12000;
 const SPHERE_RADIUS = 12;
-const BASE_COLOR = new THREE.Color('#67e8f9');
-// Additive blending sums overlapping points, so the per-point contribution is
-// scaled down — brightness comes from bloom, not from saturating the buffer.
-const POINT_GAIN = 0.42;
-const HOT_COLOR = new THREE.Color('#ffffff');
+const PAGE_BG = '#f6f8fc';
+// On a light ground the cloud is drawn as dark ink rather than glowing dust:
+// additive blending only ever brightens, so it is invisible here, and bloom
+// would wash out the near-white background. Normal blending instead.
+const BASE_COLOR = new THREE.Color('#13314f');
+const HOT_COLOR = new THREE.Color('#0284c7'); // particles under the cursor
 
 /** Evenly distributed points on a sphere (Fibonacci spiral). */
 function sphereCloud(count, radius) {
@@ -98,7 +95,7 @@ export function initHero({ word = 'DEV', container }) {
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#050a14');
+  scene.background = new THREE.Color(PAGE_BG);
 
   const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
   camera.position.set(0, 0, 35);
@@ -111,12 +108,12 @@ export function initHero({ word = 'DEV', container }) {
   geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(COUNT * 3).fill(1), 3));
 
   const material = new THREE.PointsMaterial({
-    size: 0.1,
+    size: 0.15,
     vertexColors: true,
     transparent: true,
     opacity: 1,
     sizeAttenuation: true,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
     depthWrite: false,
   });
 
@@ -124,7 +121,7 @@ export function initHero({ word = 'DEV', container }) {
   points.position.y = 1.5;
   scene.add(points);
 
-  const BASE_SIZE = 0.1;
+  const BASE_SIZE = 0.15; // dark-on-light needs more mass than glowing dust did
   const CLOUD_WIDTH = 24; // widest the cloud gets (text target width + margin)
 
   /**
@@ -140,19 +137,6 @@ export function initHero({ word = 'DEV', container }) {
     material.size = Math.max(0.05, BASE_SIZE * scale);
   }
   fitToViewport();
-
-  const composer = new EffectComposer(renderer);
-  composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  composer.setSize(container.clientWidth, container.clientHeight);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(
-    new THREE.Vector2(container.clientWidth, container.clientHeight),
-    0.55, // strength
-    0.35, // radius
-    0.35 // threshold — keep the glow off the dim body of the cloud
-  );
-  composer.addPass(bloom);
-  composer.addPass(new OutputPass());
 
   /* ---------------- interaction state ---------------- */
 
@@ -188,7 +172,6 @@ export function initHero({ word = 'DEV', container }) {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
-    composer.setSize(w, h);
     fitToViewport();
   }
   window.addEventListener('resize', onResize);
@@ -299,14 +282,14 @@ export function initHero({ word = 'DEV', container }) {
       }
 
       const k = Math.min(1, heat);
-      col[ix] = (BASE_COLOR.r + (HOT_COLOR.r - BASE_COLOR.r) * k) * POINT_GAIN;
-      col[iy] = (BASE_COLOR.g + (HOT_COLOR.g - BASE_COLOR.g) * k) * POINT_GAIN;
-      col[iz] = (BASE_COLOR.b + (HOT_COLOR.b - BASE_COLOR.b) * k) * POINT_GAIN;
+      col[ix] = BASE_COLOR.r + (HOT_COLOR.r - BASE_COLOR.r) * k;
+      col[iy] = BASE_COLOR.g + (HOT_COLOR.g - BASE_COLOR.g) * k;
+      col[iz] = BASE_COLOR.b + (HOT_COLOR.b - BASE_COLOR.b) * k;
     }
 
     posAttr.needsUpdate = true;
     colAttr.needsUpdate = true;
-    composer.render();
+    renderer.render(scene, camera);
   }
 
   requestAnimationFrame(frame);

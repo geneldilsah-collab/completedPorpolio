@@ -14,8 +14,10 @@ function placeholder(name) {
   const hues = [198, 262, 160, 40, 350, 220];
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  // Both shifts must be unsigned: `h >> 3` on a hash above 2^31 yields a
+  // negative number, and JS `%` keeps the sign, so the lookup would miss.
   const a = hues[h % hues.length];
-  const b = hues[(h >> 3) % hues.length];
+  const b = hues[(h >>> 3) % hues.length];
   const initials = name
     .split(/\s+/)
     .slice(0, 2)
@@ -25,18 +27,18 @@ function placeholder(name) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
 <defs>
 <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="hsl(${a} 70% 18%)"/>
-<stop offset="1" stop-color="hsl(${b} 65% 9%)"/>
+<stop offset="0" stop-color="hsl(${a} 72% 95%)"/>
+<stop offset="1" stop-color="hsl(${b} 60% 88%)"/>
 </linearGradient>
 <pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse">
-<path d="M40 0H0v40" fill="none" stroke="hsl(${a} 70% 60%)" stroke-opacity=".12"/>
+<path d="M40 0H0v40" fill="none" stroke="hsl(${a} 55% 40%)" stroke-opacity=".13"/>
 </pattern>
 </defs>
 <rect width="800" height="500" fill="url(#g)"/>
 <rect width="800" height="500" fill="url(#p)"/>
-<circle cx="640" cy="120" r="150" fill="hsl(${a} 80% 55%)" fill-opacity=".14"/>
+<circle cx="640" cy="120" r="150" fill="hsl(${a} 70% 50%)" fill-opacity=".13"/>
 <text x="400" y="250" font-family="Inter,system-ui,sans-serif" font-size="130" font-weight="800"
- fill="hsl(${a} 60% 78%)" fill-opacity=".5" text-anchor="middle" dominant-baseline="central">${esc(initials)}</text>
+ fill="hsl(${a} 55% 38%)" fill-opacity=".42" text-anchor="middle" dominant-baseline="central">${esc(initials)}</text>
 </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
@@ -50,11 +52,11 @@ function monogram(name) {
     .toUpperCase();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="800" viewBox="0 0 640 800">
 <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="#0b2237"/><stop offset="1" stop-color="#060d1a"/></linearGradient></defs>
+<stop offset="0" stop-color="#e8f1fb"/><stop offset="1" stop-color="#fbfdff"/></linearGradient></defs>
 <rect width="640" height="800" fill="url(#g)"/>
-<circle cx="320" cy="330" r="190" fill="#38bdf8" fill-opacity=".10"/>
+<circle cx="320" cy="330" r="190" fill="#0ea5e9" fill-opacity=".10"/>
 <text x="320" y="340" font-family="Inter,system-ui,sans-serif" font-size="200" font-weight="800"
- fill="#7dd3fc" fill-opacity=".55" text-anchor="middle" dominant-baseline="central">${esc(initials)}</text>
+ fill="#0369a1" fill-opacity=".38" text-anchor="middle" dominant-baseline="central">${esc(initials)}</text>
 </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
