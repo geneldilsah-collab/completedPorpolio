@@ -1,4 +1,4 @@
-import { profile, nav as navItems, contact as contactCfg } from './config.js';
+import { profile, nav as navItems, contact as contactCfg, projectsVisible } from './config.js';
 import { icon } from './icons.js';
 import { renderSections } from './sections.js';
 import { initHero } from './hero.js';
@@ -138,8 +138,11 @@ function buildNav() {
     }
     setActive(navItems[0].name);
   }
-  window.addEventListener('scroll', spy, { passive: true });
+  const navEl = $('.nav');
+  const syncNavSurface = () => navEl.classList.toggle('is-scrolled', window.scrollY > 40);
+  window.addEventListener('scroll', () => { spy(); syncNavSurface(); }, { passive: true });
   spy();
+  syncNavSurface();
 }
 
 /* ============================================================ Hero roles */
@@ -203,33 +206,68 @@ function initReveals() {
   });
 }
 
-/* ============================================================ Show more */
+/* ================================================ Project filter + more */
 
-function initShowMore() {
+function initProjects() {
+  const grid = $('#project-grid');
+  if (!grid) return;
+  const cards = $$('.project-card', grid);
+  const chips = $$('.filter-chip');
+  const wrap = $('#show-more-wrap');
   const btn = $('#show-more');
-  if (!btn) return;
   const label = $('span', btn);
+
+  let filter = 'all';
   let expanded = false;
 
-  btn.addEventListener('click', () => {
-    expanded = !expanded;
-    const extras = $$('[data-extra]');
-    extras.forEach((el) => {
-      el.hidden = !expanded;
-      if (expanded) el.style.opacity = 1;
+  function render({ animate = true } = {}) {
+    const matching = cards.filter((c) => filter === 'all' || c.dataset.cat === filter);
+    const limit = expanded ? matching.length : projectsVisible;
+    const shown = [];
+
+    cards.forEach((c) => {
+      const i = matching.indexOf(c);
+      const visible = i !== -1 && i < limit;
+      if (visible && c.hidden) shown.push(c);
+      c.hidden = !visible;
     });
-    if (expanded && gsap && !reduced) {
-      gsap.fromTo(extras, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.06, ease: 'power3.out' });
-    }
-    label.textContent = expanded ? 'Show Less' : 'Show More';
+
+    wrap.hidden = matching.length <= projectsVisible;
+    label.textContent = expanded ? 'Show Less' : `Show More (${matching.length - projectsVisible})`;
     btn.setAttribute('aria-expanded', String(expanded));
     btn.querySelector('svg')?.replaceWith(
       new DOMParser().parseFromString(icon(expanded ? 'chevronUp' : 'chevronDown', { size: 18 }), 'image/svg+xml')
         .documentElement
     );
-    if (!expanded) $('#project').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+
+    if (animate && gsap && !reduced && shown.length) {
+      gsap.fromTo(shown, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.04, ease: 'power3.out' });
+    }
     window.ScrollTrigger?.refresh();
+  }
+
+  chips.forEach((chip) =>
+    chip.addEventListener('click', () => {
+      filter = chip.dataset.filter;
+      expanded = false;
+      chips.forEach((c) => {
+        const on = c === chip;
+        c.classList.toggle('is-active', on);
+        c.setAttribute('aria-selected', String(on));
+      });
+      // Every card is re-evaluated, so force the entrance on the whole new set.
+      cards.forEach((c) => (c.hidden = true));
+      render();
+    })
+  );
+
+  btn.addEventListener('click', () => {
+    expanded = !expanded;
+    render();
+    if (!expanded) $('#project').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   });
+
+  render({ animate: false });
 }
 
 /* ============================================================= Lightbox */
@@ -354,7 +392,7 @@ async function boot() {
   applyProfile();
   renderSections($('#sections'));
   buildNav();
-  initShowMore();
+  initProjects();
   initLightbox();
   initContactForm();
   initBackToTop();

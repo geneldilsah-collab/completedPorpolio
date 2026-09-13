@@ -3,7 +3,7 @@
  * Plain string templating — no framework, no build step.
  */
 
-import { about, profile, proficiencyLegend, technologies, projects, projectsVisible, contact, footer } from './config.js';
+import { about, profile, proficiencyLegend, technologies, projects, projectCategories, contact, footer } from './config.js';
 import { icon } from './icons.js';
 
 const esc = (s = '') =>
@@ -185,8 +185,9 @@ function projectCard(p, i) {
         ? `<span class="badge badge-github" title="Source on GitHub">GitHub</span>`
         : `<span class="badge badge-private" title="Source not publicly shared">Private</span>`;
 
-  const category = p.cat
-    ? `<span class="card-cat">${esc(p.cat)}</span>`
+  const label = p.label || projectCategories.find((c) => c.key === p.cat)?.label;
+  const category = label
+    ? `<span class="card-cat">${esc(label)}</span>`
     : `<span class="card-cat muted">${kind === 'live' ? 'Product' : kind === 'github' ? 'Open source' : 'Confidential'}</span>`;
 
   const footerHtml =
@@ -208,7 +209,7 @@ function projectCard(p, i) {
       : '';
 
   return `
-  <article class="project-card reveal" data-index="${i}" ${i >= projectsVisible ? 'data-extra="1" hidden' : ''}>
+  <article class="project-card" data-index="${i}" data-cat="${esc(p.cat)}">
     <div class="card-image-wrap">
       ${badge}
       <button class="card-zoom" type="button" data-zoom="${esc(img)}" data-zoom-alt="${esc(p.name)}"
@@ -232,7 +233,11 @@ function projectCard(p, i) {
 }
 
 function renderProjects() {
-  const more = projects.length > projectsVisible;
+  // Only offer filters that actually have projects behind them.
+  const cats = projectCategories
+    .map((c) => ({ ...c, count: projects.filter((p) => p.cat === c.key).length }))
+    .filter((c) => c.count > 0);
+
   return `
 <section class="section" id="project">
   <div class="glow-bg" style="top:20%;right:-20%"></div>
@@ -240,18 +245,25 @@ function renderProjects() {
     <div class="reveal">
       <p class="eyebrow"><span class="eyebrow-dot"></span>Project</p>
       <h2 class="section-title">Selected <span class="grad">Works</span></h2>
-      <p class="section-lead">A curated set of product, infrastructure, and AI projects.</p>
+      <p class="section-lead">Corporate sites, e-commerce stores, business systems, and Web3 products delivered across ${projects.length} projects.</p>
     </div>
-    <div class="project-grid">${projects.map(projectCard).join('')}</div>
-    ${
-      more
-        ? `<div class="show-more-wrap">
-             <button class="show-more" type="button" id="show-more" aria-expanded="false">
-               <span>Show More</span>${icon('chevronDown', { size: 18 })}
-             </button>
-           </div>`
-        : ''
-    }
+    <div class="filter-bar reveal" role="tablist" aria-label="Filter projects by category">
+      <button class="filter-chip is-active" type="button" role="tab" aria-selected="true" data-filter="all">
+        All <span class="filter-count">${projects.length}</span>
+      </button>
+      ${cats
+        .map(
+          (c) => `<button class="filter-chip" type="button" role="tab" aria-selected="false" data-filter="${esc(c.key)}">
+        ${esc(c.label)} <span class="filter-count">${c.count}</span></button>`
+        )
+        .join('')}
+    </div>
+    <div class="project-grid" id="project-grid">${projects.map(projectCard).join('')}</div>
+    <div class="show-more-wrap" id="show-more-wrap">
+      <button class="show-more" type="button" id="show-more" aria-expanded="false">
+        <span>Show More</span>${icon('chevronDown', { size: 18 })}
+      </button>
+    </div>
   </div>
 </section>`;
 }

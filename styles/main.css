@@ -182,6 +182,29 @@ body.ready .nav {
   opacity: 1;
 }
 
+/* Once content scrolls under the fixed nav, give it a surface so the logo
+   and menu never sit directly on top of body text. */
+.nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(246, 248, 252, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line-soft);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.nav.is-scrolled::before {
+  opacity: 1;
+}
+
+.nav-inner {
+  position: relative;
+}
+
 .nav-inner {
   max-width: var(--maxw);
   margin: 0 auto;
@@ -959,9 +982,9 @@ section[id] {
    Projects
    ============================================================ */
 .project-grid {
-  margin-top: 48px;
+  margin-top: 28px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 24px;
 }
 
@@ -1229,6 +1252,78 @@ section[id] {
   background: rgba(14, 165, 233, 0.09);
   border-color: rgba(2, 132, 199, 0.6);
   transform: translateY(-1px);
+}
+
+/* Category filter */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 99px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.filter-chip:hover {
+  color: var(--ink);
+  border-color: rgba(2, 132, 199, 0.4);
+}
+
+.filter-chip.is-active {
+  color: #ffffff;
+  border-color: var(--sky-700);
+  background: var(--sky-700);
+}
+
+.filter-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 11px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-soft);
+  color: var(--muted);
+}
+
+.filter-chip.is-active .filter-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  /* One swipeable row instead of seven stacked rows of chips. */
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: -24px;
+    padding: 2px 24px 8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-chip {
+    flex: none;
+  }
+}
+
+/* Site screenshots are top-anchored so the header and hero of each site show. */
+.card-zoom img[src$='.jpg'] {
+  object-position: top center;
 }
 
 /* Lightbox */
