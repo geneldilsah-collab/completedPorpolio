@@ -10,7 +10,6 @@ import * as THREE from 'three';
 
 const COUNT = 12000;
 const SPHERE_RADIUS = 12;
-const PAGE_BG = '#f6f8fc';
 // On a light ground the cloud is drawn as dark ink rather than glowing dust:
 // additive blending only ever brightens, so it is invisible here, and bloom
 // would wash out the near-white background. Normal blending instead.
@@ -82,9 +81,15 @@ function textCloud(text, count, fontSize = 150, targetWidth = 22) {
 export function initHero({ word = 'DEV', container }) {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Probe first: constructing a renderer without WebGL makes three.js log errors.
+  const probe = document.createElement('canvas');
+  if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) {
+    return { start() {}, supported: false };
+  }
+
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
   } catch {
     return { start() {}, supported: false };
   }
@@ -94,8 +99,9 @@ export function initHero({ word = 'DEV', container }) {
   renderer.setSize(container.clientWidth, container.clientHeight);
   container.appendChild(renderer.domElement);
 
+  // Transparent clear so the topographic background canvas shows through.
+  renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(PAGE_BG);
 
   const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
   camera.position.set(0, 0, 35);

@@ -96,6 +96,21 @@
       </p>
     </noscript>
 
+    <!-- Failsafe: a plain script, so it still runs if a module fails to load.
+         If the app has not started after 8s, offer a reload instead of an endless 0%. -->
+    <script>
+      setTimeout(function () {
+        if (document.body.classList.contains('ready')) return;
+        var pct = document.getElementById('loader-pct');
+        if (!pct) return;
+        pct.innerHTML =
+          'Loading is taking longer than expected. ' +
+          '<button type="button" class="loader-retry">Reload</button>';
+        pct.querySelector('button').addEventListener('click', function () {
+          location.reload();
+        });
+      }, 8000);
+    </script>
     <script type="module" src="./js/main.js"></script>
   </body>
 </html>

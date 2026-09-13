@@ -1,7 +1,8 @@
-import { profile, nav as navItems, contact as contactCfg, projectsVisible } from './config.js';
+import { profile, nav as navItems, contact as contactCfg, projectsVisible, heroBackground } from './config.js';
 import { icon } from './icons.js';
 import { renderSections } from './sections.js';
 import { initHero } from './hero.js';
+import { initHeroBackground, backgroundPatterns } from './hero-bg.js';
 
 const gsap = window.gsap;
 if (gsap && window.ScrollTrigger) gsap.registerPlugin(window.ScrollTrigger);
@@ -386,6 +387,38 @@ function initBackToTop() {
   );
 }
 
+/* ===================================================== Background picker */
+
+/** `?preview` only: a small switcher for trying each hero background live. */
+function initBackgroundPicker(background) {
+  const panel = document.createElement('div');
+  panel.className = 'bg-picker';
+  panel.setAttribute('role', 'group');
+  panel.setAttribute('aria-label', 'Hero background');
+  panel.innerHTML =
+    '<span class="bg-picker-title">Background</span>' +
+    backgroundPatterns
+      .map((p) => `<button type="button" data-bg="${p.key}">${p.label}</button>`)
+      .join('');
+  document.body.appendChild(panel);
+
+  const sync = () =>
+    $$('button', panel).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.bg === background.pattern)));
+
+  panel.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-bg]');
+    if (!btn) return;
+    e.stopPropagation();
+    background.setPattern(btn.dataset.bg);
+    const url = new URL(location.href);
+    url.searchParams.set('bg', btn.dataset.bg);
+    history.replaceState(null, '', url);
+    sync();
+  });
+  panel.addEventListener('pointerdown', (e) => e.stopPropagation());
+  sync();
+}
+
 /* ================================================================= Boot */
 
 async function boot() {
@@ -398,16 +431,22 @@ async function boot() {
   initBackToTop();
   initReveals();
 
+  const params = new URLSearchParams(location.search);
+  const background = initHeroBackground($('#hero-canvas'), params.get('bg') || heroBackground);
+  if (params.has('preview')) initBackgroundPicker(background);
   const hero = initHero({ word: profile.particleWord, container: $('#hero-canvas') });
 
   if (!hero.supported) {
     // No WebGL — show a plain typographic hero instead of an empty void.
-    $('#hero-canvas').innerHTML =
-      `<div style="position:absolute;inset:0;display:grid;place-content:center">
+    // Append, don't replace: the animated background canvas lives in this container too.
+    $('#hero-canvas').insertAdjacentHTML(
+      'beforeend',
+      `<div class="hero-fallback" style="position:absolute;inset:0;display:grid;place-content:center">
          <h1 style="font-size:clamp(3rem,16vw,10rem);font-weight:900;letter-spacing:-.05em;margin:0;
                     background:linear-gradient(90deg,#0284c7,#13314f);-webkit-background-clip:text;
                     background-clip:text;color:transparent">${profile.particleWord}</h1>
-       </div>`;
+       </div>`
+    );
   }
 
   // Fonts must be ready before the particle text is sampled.

@@ -23,6 +23,14 @@ export const profile = {
   ],
 };
 
+/**
+ * Animated background behind the hero:
+ *   'waves' Silk Waves · 'dots' Ripple Grid · 'network' Constellation
+ *   'flow' Flow Field · 'topo' Topographic · 'galaxy' Galaxy 3D · 'ocean' Deep Sea 3D
+ * Open the site with ?preview to switch between them live.
+ */
+export const heroBackground = 'galaxy';
+
 export const nav = [
   { name: 'Home', href: '#hero' },
   { name: 'About', href: '#about' },
