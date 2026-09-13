@@ -84,16 +84,16 @@ export function initHero({ word = 'DEV', container }) {
   // Probe first: constructing a renderer without WebGL makes three.js log errors.
   const probe = document.createElement('canvas');
   if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) {
-    return { start() {}, supported: false };
+    return { start() {}, setTone() {}, supported: false };
   }
 
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
   } catch {
-    return { start() {}, supported: false };
+    return { start() {}, setTone() {}, supported: false };
   }
-  if (!renderer.getContext()) return { start() {}, supported: false };
+  if (!renderer.getContext()) return { start() {}, setTone() {}, supported: false };
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
@@ -302,6 +302,11 @@ export function initHero({ word = 'DEV', container }) {
 
   return {
     supported: true,
+    /** Light ink over dark scenes (galaxy, deep sea); dark ink over light ones. */
+    setTone(tone) {
+      BASE_COLOR.set(tone === 'dark' ? '#e0f2fe' : '#13314f');
+      HOT_COLOR.set(tone === 'dark' ? '#67e8f9' : '#0284c7');
+    },
     /** Kick off the sphere → text morph once the loader has cleared. */
     start() {
       // Re-sample now that webfonts are guaranteed loaded.

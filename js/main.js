@@ -140,7 +140,11 @@ function buildNav() {
     setActive(navItems[0].name);
   }
   const navEl = $('.nav');
-  const syncNavSurface = () => navEl.classList.toggle('is-scrolled', window.scrollY > 40);
+  const syncNavSurface = () => {
+    navEl.classList.toggle('is-scrolled', window.scrollY > 40);
+    // Fixed elements (social rail) leave the dark hero once the light page scrolls under them.
+    document.body.classList.toggle('past-hero', window.scrollY > window.innerHeight * 0.75);
+  };
   window.addEventListener('scroll', () => { spy(); syncNavSurface(); }, { passive: true });
   spy();
   syncNavSurface();
@@ -432,20 +436,29 @@ async function boot() {
   initReveals();
 
   const params = new URLSearchParams(location.search);
-  const background = initHeroBackground($('#hero-canvas'), params.get('bg') || heroBackground);
+  let hero = null;
+  let heroTone = 'light';
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  // Dark scenes (galaxy, deep sea) switch the hero's text and word to light colours.
+  const applySceneTone = (tone, scene) => {
+    heroTone = tone;
+    document.body.classList.toggle('hero-dark', tone === 'dark');
+    themeMeta?.setAttribute('content', scene?.themeColor || '#f6f8fc');
+    hero?.setTone(tone);
+  };
+  const background = initHeroBackground($('#hero-canvas'), params.get('bg') || heroBackground, {
+    onScene: applySceneTone,
+  });
   if (params.has('preview')) initBackgroundPicker(background);
-  const hero = initHero({ word: profile.particleWord, container: $('#hero-canvas') });
+  hero = initHero({ word: profile.particleWord, container: $('#hero-canvas') });
+  hero.setTone(heroTone);
 
   if (!hero.supported) {
     // No WebGL — show a plain typographic hero instead of an empty void.
     // Append, don't replace: the animated background canvas lives in this container too.
     $('#hero-canvas').insertAdjacentHTML(
       'beforeend',
-      `<div class="hero-fallback" style="position:absolute;inset:0;display:grid;place-content:center">
-         <h1 style="font-size:clamp(3rem,16vw,10rem);font-weight:900;letter-spacing:-.05em;margin:0;
-                    background:linear-gradient(90deg,#0284c7,#13314f);-webkit-background-clip:text;
-                    background-clip:text;color:transparent">${profile.particleWord}</h1>
-       </div>`
+      `<div class="hero-fallback"><h1 class="hero-fallback-word">${profile.particleWord}</h1></div>`
     );
   }
 

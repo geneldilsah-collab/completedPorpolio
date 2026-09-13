@@ -449,6 +449,61 @@ body.ready #hero-canvas {
 
 #hero-canvas .hero-fallback {
   z-index: 3;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+}
+
+.hero-fallback-word {
+  margin: 0;
+  font-size: clamp(3rem, 16vw, 10rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  background: linear-gradient(90deg, #0284c7, #13314f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ------------------------------------------------------------
+   Dark scenes (Galaxy 3D, Deep Sea 3D): light text over the hero
+   ------------------------------------------------------------ */
+body.hero-dark .hero-fallback-word {
+  background-image: linear-gradient(90deg, #f0f9ff, #a5b4fc);
+  filter: drop-shadow(0 6px 30px rgba(99, 102, 241, 0.45));
+}
+
+body.hero-dark .hero-role {
+  color: #bae6fd;
+  text-shadow: 0 2px 16px rgba(2, 6, 23, 0.6);
+}
+
+body.hero-dark .hero-scroll {
+  color: rgba(224, 242, 254, 0.75);
+}
+
+body.hero-dark:not(.past-hero) .social-rail a {
+  color: rgba(224, 242, 254, 0.75);
+}
+
+body.hero-dark:not(.past-hero) .social-rail a:hover {
+  color: #ffffff;
+}
+
+body.hero-dark:not(.past-hero) .social-rail .rail-line {
+  background: rgba(224, 242, 254, 0.3);
+}
+
+body.hero-dark .nav:not(.is-scrolled) .nav-logo,
+body.hero-dark .nav:not(.is-scrolled) .nav-toggle {
+  color: #ffffff;
+}
+
+body.hero-dark .nav:not(.is-scrolled) .nav-logo-mark {
+  color: #e0f2fe;
+  border-color: rgba(224, 242, 254, 0.4);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .hero-overlay {

@@ -430,6 +430,11 @@ const PATTERNS = {
   /* ------------------------------------------------------ galaxy (3D) */
   galaxy: {
     label: 'Galaxy 3D',
+    scene: {
+      tone: 'dark',
+      background: 'radial-gradient(120% 95% at 50% 45%, #1e1b4b 0%, #0b1026 45%, #03040c 100%)',
+      themeColor: '#05060f',
+    },
     fade: 0.3, // the headline sits over the star at the centre — keep it visible
     DIST: 1750,
 
@@ -464,9 +469,17 @@ const PATTERNS = {
           r,
           theta: arm + Math.log(r / (R * 0.08)) / Math.tan(0.28) + gauss() * 0.2,
           size: 90 + Math.random() * 130,
-          color: Math.random() < 0.5 ? 'rgba(56, 189, 248, 0.16)' : 'rgba(139, 92, 246, 0.14)',
+          color: ['rgba(99, 102, 241, 0.28)', 'rgba(56, 189, 248, 0.2)', 'rgba(236, 72, 153, 0.16)'][(Math.random() * 3) | 0],
         };
       });
+
+      // Distant background stars far beyond the galaxy; they twinkle and barely move.
+      this.farStars = Array.from({ length: 280 }, () => ({
+        fx: Math.random(),
+        fy: Math.random(),
+        s: 0.4 + Math.random() * 1.1,
+        tw: Math.random() * Math.PI * 2,
+      }));
 
       // Original planets on inclined 3D orbits. Kepler's third law: T ∝ a^1.5.
       const specs = [
@@ -510,6 +523,21 @@ const PATTERNS = {
       const near = this.DIST - this.R;
       const depthOf = (zc) => Math.min(1, Math.max(0, (zc - near) / (2 * this.R)));
 
+      // Far starfield: a tiny parallax shift sells the distance.
+      const far = new Path2D();
+      const shiftX = (follow.x / w - 0.5) * -24;
+      const shiftY = (follow.y / h - 0.5) * -14;
+      for (const fs of this.farStars) {
+        const x = fs.fx * w + shiftX;
+        const y = fs.fy * h + shiftY;
+        const r = fs.s * (0.75 + 0.25 * Math.sin(time * 1.7 + fs.tw));
+        far.moveTo(x + r, y);
+        far.arc(x, y, r, 0, Math.PI * 2);
+      }
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fill(far);
+
       // Nebula clouds along the arms give the disk body between the stars.
       for (const cl of this.clouds) {
         cl.theta -= (55 / (cl.r + 60)) * dt;
@@ -527,8 +555,8 @@ const PATTERNS = {
       }
 
       // Stars with differential rotation: inner orbits are faster, so the arms wind.
-      const TONES = ['#0284c7', '#4f46e5', '#7c3aed'];
-      const ALPHAS = [0.75, 0.48, 0.24]; // near → far
+      const TONES = ['#e0f2fe', '#c7d2fe', '#fbcfe8'];
+      const ALPHAS = [0.95, 0.62, 0.3]; // near → far
       const buckets = TONES.map(() => [new Path2D(), new Path2D(), new Path2D()]);
       for (const st of this.stars) {
         st.theta -= (55 / (st.r + 60)) * dt;
@@ -557,14 +585,14 @@ const PATTERNS = {
       });
 
       // Orbit paths, fading with depth.
-      ctx.strokeStyle = S.gradient;
+      ctx.strokeStyle = '#c7d2fe';
       ctx.lineWidth = 1;
       for (const p of this.planets) {
         let prev = null;
         for (let i = 0; i <= 72; i++) {
           const q = cam.project(...this.orbitPoint(p, (i / 72) * Math.PI * 2));
           if (q && prev) {
-            ctx.globalAlpha = 0.2 * (1 - depthOf(q.z) * 0.75);
+            ctx.globalAlpha = 0.24 * (1 - depthOf(q.z) * 0.75);
             ctx.beginPath();
             ctx.moveTo(prev.x, prev.y);
             ctx.lineTo(q.x, q.y);
@@ -616,7 +644,7 @@ const PATTERNS = {
             for (let k = 1; k <= 10; k++) {
               const t = cam.project(...this.orbitPoint(p, p.theta - 0.035 * k));
               if (!t) break;
-              ctx.globalAlpha = 0.16 * (1 - k / 11) * fog;
+              ctx.globalAlpha = 0.28 * (1 - k / 11) * fog;
               ctx.beginPath();
               ctx.moveTo(prev.x, prev.y);
               ctx.lineTo(t.x, t.y);
@@ -640,7 +668,7 @@ const PATTERNS = {
             const shade = ctx.createRadialGradient(hx, hy, r * 0.05, q.x, q.y, r * 1.05);
             shade.addColorStop(0, p.colors[0]);
             shade.addColorStop(0.55, p.colors[1]);
-            shade.addColorStop(1, '#0b1a2b');
+            shade.addColorStop(1, '#020617');
             ctx.globalAlpha = fog;
             ctx.fillStyle = shade;
             ctx.beginPath();
@@ -662,7 +690,7 @@ const PATTERNS = {
               z: m.z,
               draw: () => {
                 ctx.globalAlpha = fog;
-                ctx.fillStyle = '#64748b';
+                ctx.fillStyle = '#cbd5e1';
                 ctx.beginPath();
                 ctx.arc(m.x, m.y, Math.max(1.5, 6 * m.k), 0, Math.PI * 2);
                 ctx.fill();
@@ -700,6 +728,11 @@ const PATTERNS = {
   /* ---------------------------------------------------- deep sea (3D) */
   ocean: {
     label: 'Deep Sea 3D',
+    scene: {
+      tone: 'dark',
+      background: 'linear-gradient(180deg, #0e7490 0%, #0b4f6c 30%, #083450 62%, #041627 100%)',
+      themeColor: '#0b4f6c',
+    },
     fade: 0.35,
     DIST: 1400,
     BOX: { x: 950, y: 420, z: 650 }, // swimmable volume (world units); y grows downward
@@ -750,10 +783,10 @@ const PATTERNS = {
       const B = this.BOX;
       ctx.clearRect(0, 0, w, h);
 
-      // Water: sunlit near the surface, darker toward the floor.
-      const depthTint = ctx.createLinearGradient(0, 0, 0, h);
-      depthTint.addColorStop(0, 'rgba(186, 230, 253, 0.3)');
-      depthTint.addColorStop(1, 'rgba(3, 105, 161, 0.2)');
+      // Sunlit glow just under the surface; the depth colour itself is the scene background.
+      const depthTint = ctx.createLinearGradient(0, 0, 0, h * 0.4);
+      depthTint.addColorStop(0, 'rgba(165, 243, 252, 0.22)');
+      depthTint.addColorStop(1, 'rgba(165, 243, 252, 0)');
       ctx.globalAlpha = 1;
       ctx.fillStyle = depthTint;
       ctx.fillRect(0, 0, w, h);
@@ -763,8 +796,8 @@ const PATTERNS = {
         const bx = w * (0.06 + i * 0.18) + Math.sin(time * 0.15 + i * 1.7) * 60;
         const shimmer = 0.5 + 0.5 * S.noise(i * 3.1, time * 0.25, 0);
         const shaft = ctx.createLinearGradient(0, 0, 0, h * 0.95);
-        shaft.addColorStop(0, `rgba(255, 255, 255, ${0.38 * shimmer})`);
-        shaft.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        shaft.addColorStop(0, `rgba(186, 230, 253, ${0.22 * shimmer})`);
+        shaft.addColorStop(1, 'rgba(186, 230, 253, 0)');
         ctx.fillStyle = shaft;
         ctx.beginPath();
         ctx.moveTo(bx - 20, 0);
@@ -878,8 +911,8 @@ const PATTERNS = {
           z: zMid,
           draw: () => {
             const fog = fogOf(zMid);
-            ctx.strokeStyle = mixColor('#0f766e', '#a5f3fc', fog);
-            ctx.globalAlpha = 0.5 * (1 - fog * 0.6);
+            ctx.strokeStyle = mixColor('#2dd4bf', '#0b4f6c', fog * 0.85);
+            ctx.globalAlpha = 0.6 * (1 - fog * 0.5);
             ctx.lineCap = 'round';
             for (let i = 1; i < pts.length; i++) {
               ctx.lineWidth = Math.max(1.2, 16 * pts[i].k * (1 - (i / pts.length) * 0.7));
@@ -899,15 +932,15 @@ const PATTERNS = {
           items.push({
             z: drawn.z,
             draw: () => {
-              ctx.fillStyle = '#0c4a6e';
-              ctx.globalAlpha = 0.34 * (1 - fogOf(drawn.z) * 0.5);
+              ctx.fillStyle = '#01111f';
+              ctx.globalAlpha = 0.45 * (1 - fogOf(drawn.z) * 0.5);
               ctx.fill(drawn.path);
             },
           });
         }
       }
 
-      const TONES = ['#0369a1', '#1d4ed8', '#0e7490'];
+      const TONES = ['#e0f2fe', '#a5f3fc', '#c7d2fe'];
       for (const f of this.fish) {
         const drawn = fishShape(cam, [f.x, f.y, f.z], [f.vx, f.vy, f.vz], f.len, Math.sin(f.phase));
         if (!drawn) continue;
@@ -915,7 +948,7 @@ const PATTERNS = {
           z: drawn.z,
           draw: () => {
             const fog = fogOf(drawn.z);
-            ctx.fillStyle = mixColor(TONES[f.tone], '#bae6fd', fog * 0.85);
+            ctx.fillStyle = mixColor(TONES[f.tone], '#0b4f6c', fog * 0.8);
             ctx.globalAlpha = 0.9 - fog * 0.55;
             ctx.fill(drawn.path);
           },
@@ -966,18 +999,18 @@ const PATTERNS = {
         bubblePath.arc(q.x, q.y, r, 0, Math.PI * 2);
       }
 
-      ctx.fillStyle = '#0369a1';
-      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = '#e0f2fe';
+      ctx.globalAlpha = 0.22;
       ctx.fill(farDust);
 
       items.sort((a, b) => b.z - a.z).forEach((it) => it.draw());
 
-      ctx.fillStyle = '#0369a1';
-      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = '#e0f2fe';
+      ctx.globalAlpha = 0.5;
       ctx.fill(nearDust);
-      ctx.strokeStyle = '#0284c7';
+      ctx.strokeStyle = '#bae6fd';
       ctx.lineWidth = 1.1;
-      ctx.globalAlpha = 0.4;
+      ctx.globalAlpha = 0.55;
       ctx.stroke(bubblePath);
     },
   },
@@ -1063,7 +1096,14 @@ export const backgroundPatterns = Object.entries(PATTERNS).map(([key, p]) => ({ 
 
 const FPS = 30;
 
-export function initHeroBackground(container, initial = 'waves') {
+/**
+ * @param {HTMLElement} container
+ * @param {string} initial   pattern key
+ * @param {{ onScene?: (tone: 'light'|'dark', scene?: object) => void }} [hooks]
+ *   onScene fires whenever the active pattern's backdrop changes, so the page can
+ *   switch hero text to light colours over dark scenes.
+ */
+export function initHeroBackground(container, initial = 'waves', { onScene } = {}) {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canvas = document.createElement('canvas');
   canvas.id = 'hero-bg';
@@ -1090,6 +1130,12 @@ export function initHeroBackground(container, initial = 'waves') {
   let lastPointer = -Infinity;
   let fade = null;
   let pattern = PATTERNS[initial] ? initial : 'waves';
+
+  function applyScene() {
+    const scene = PATTERNS[pattern].scene;
+    container.style.background = scene?.background || '';
+    onScene?.(scene?.tone || 'light', scene);
+  }
 
   function resize() {
     S.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -1181,6 +1227,7 @@ export function initHeroBackground(container, initial = 'waves') {
   }
 
   resize();
+  applyScene();
   S.follow.x = target.x = S.w * 0.5;
   S.follow.y = target.y = S.h * 0.5;
   new ResizeObserver(() => {
@@ -1200,6 +1247,7 @@ export function initHeroBackground(container, initial = 'waves') {
     setPattern(name) {
       if (!PATTERNS[name] || name === pattern) return;
       pattern = name;
+      applyScene();
       ctx.clearRect(0, 0, S.w, S.h);
       PATTERNS[pattern].resize?.(S);
       Object.assign(stats, { pattern, frames: 0, totalMs: 0 });
