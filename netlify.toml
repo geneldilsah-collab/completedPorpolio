@@ -1,0 +1,29 @@
+# Netlify config. Static site, no build step: publish the repo root as-is.
+# Headers mirror vercel.json so both hosts behave the same.
+
+[build]
+  publish = "."
+
+# Vendored libraries are pinned, so cache them for a year.
+[[headers]]
+  for = "/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# App modules and styles change with every deploy; always revalidate so the
+# browser never pairs a fresh main.js with a stale module it imports.
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/styles/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
