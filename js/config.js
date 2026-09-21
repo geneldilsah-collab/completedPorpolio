@@ -55,16 +55,20 @@ export const nav = [
 export const about = {
   paragraphs: {
     ja: [
-      'ウェブサイト、オンラインストア、業務システムの開発に12年携わってきたフルスタックエンジニアです。日本国内および海外の企業に向けて制作を行ってきました。',
-      '企業サイト・採用サイト、商品ローンチ向けのランディングページ、クリニック・サロン・法律事務所・大学・地域店舗のサイトまで、ビジネスがウェブに求めるものを幅広く手がけています。',
-      'ECではShopify、ecforce、MakeShop、BASE、STORESでのストア構築とカスタマイズを、システム開発ではPHP、Python、Django、kintoneによる顧客管理・予約・会計ツールの開発を行っています。',
-      'また、Solidityによるスマートコントラクト、ERC20 / ERC721 / ERC1155トークン、DeFi・DEX連携などのブロックチェーンプロダクトをEthereum、Solana、Polygon、BNB Chain、Fantomで開発し、UnityやFlutterでのアプリ開発も行っています。',
+      'ウェブサイト、オンラインストア、業務システムの開発に12年携わってきたフルスタックエンジニアです。日本国内および海外の企業に向けて、Web制作からシステム開発、既存サイト・システムのリニューアルまで幅広く手がけてきました。',
+      '企業サイト・採用サイト、商品ローンチ向けのランディングページ、クリニック・サロン・法律事務所・大学・地域店舗のサイトなど、さまざまな業種のWebサイトに対応しています。特に、フロントエンドだけでなく、バックエンドやデータベース、API連携まで含め、Webサービス全体を一貫して実装できることを強みとしています。',
+      'フロントエンドではHTML / CSS / JavaScriptをベースに、React、Next.jsを用いたWebアプリケーション開発に対応。バックエンドではPHP / Laravel、Python / Djangoを中心に、API開発、認証・権限管理、データベース設計、外部サービス連携など、サービスの裏側まで含めたシステム構築を行っています。',
+      'ECではShopify、ecforce、MakeShop、BASE、STORESでのストア構築・カスタマイズに対応し、商品・顧客・注文管理などの機能や外部サービスとの連携まで幅広く対応しています。また、kintoneを活用した顧客管理・予約・会計などの業務システム開発も行っています。',
+      'さらに、生成AI・AI APIを活用したWebサービス開発、Solidityによるスマートコントラクト、ERC20 / ERC721 / ERC1155トークン、DeFi・DEX連携などのブロックチェーン開発にも対応。Ethereum、Solana、Polygon、BNB Chain、Fantomなどの環境での開発経験があり、UnityやFlutterを用いたアプリ開発にも携わっています。',
+      'Webサイト制作からフロントエンド、バックエンド、データベース、API、外部サービス連携、AI・ブロックチェーンまで、プロジェクトの目的に合わせて幅広い技術領域をカバーできることが強みです。',
     ],
     en: [
-      'I am a full-stack engineer with 12 years of experience delivering websites, online stores, and business systems for companies across Japan and overseas.',
-      'My work covers the full range of what a business needs on the web: corporate and recruiting sites, landing pages for product launches, and sites for clinics, salons, law firms, universities, and local shops.',
-      'On the commerce side I build and customise stores on Shopify, ecforce, MakeShop, BASE, and STORES. On the systems side I develop customer management, reservation, and accounting tools with PHP, Python, Django, and kintone.',
-      'I also develop blockchain products — smart contracts in Solidity, ERC20 / ERC721 / ERC1155 tokens, DeFi and DEX integrations — across Ethereum, Solana, Polygon, BNB Chain, and Fantom, as well as apps with Unity and Flutter.',
+      'I am a full-stack engineer with 12 years of experience developing websites, online stores, and business systems. I have worked on everything from web production and system development to the renewal of existing sites and systems for companies in Japan and overseas.',
+      'I support a wide range of website types, including corporate sites, recruiting sites, product launch landing pages, and sites for clinics, salons, law firms, universities, and local businesses. My strength is being able to implement the entire web service end-to-end, including frontend, backend, databases, and API integration—not just the visible interface.',
+      'On the frontend, I work with HTML, CSS, and JavaScript, and build web applications with React and Next.js. On the backend, I focus on PHP/Laravel and Python/Django to develop APIs, authentication and authorization, database design, and integration with external services, covering the full system behind the product.',
+      'For e-commerce, I handle store setup and customization on Shopify, ecforce, MakeShop, BASE, and STORES, including product, customer, and order management functionality and integrations with external services. I also develop business systems using kintone for customer management, reservations, and accounting.',
+      'I also support AI-powered web services using generative AI and AI APIs, as well as blockchain development involving Solidity smart contracts, ERC20 / ERC721 / ERC1155 tokens, and DeFi / DEX integrations. I have experience working in Ethereum, Solana, Polygon, BNB Chain, and Fantom environments, and I have also contributed to app development using Unity and Flutter.',
+      'My strength is covering a broad range of technical areas—from website creation and frontend/backend development to databases, APIs, external service integrations, AI, and blockchain—according to each project’s goals.',
     ],
   },
   note: {
