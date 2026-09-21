@@ -1,8 +1,9 @@
 import { profile, nav as navItems, contact as contactCfg, projectsVisible, heroBackground } from './config.js';
 import { icon } from './icons.js';
-import { renderSections } from './sections.js';
+import { renderSections, monogramText } from './sections.js';
 import { initHero } from './hero.js';
 import { initHeroBackground, backgroundPatterns } from './hero-bg.js';
+import { t, ui, locales, getLocale, setLocale } from './i18n.js';
 
 const gsap = window.gsap;
 if (gsap && window.ScrollTrigger) gsap.registerPlugin(window.ScrollTrigger);
@@ -14,17 +15,22 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 /* ================================================================== Head */
 
 function applyProfile() {
-  document.title = `${profile.name} | ${profile.title}`;
-  $('#nav-name').textContent = profile.name;
-  $('#nav-mark').textContent = (profile.name.match(/\b\w/g) || ['D']).slice(0, 2).join('').toUpperCase();
+  const locale = getLocale();
+  document.documentElement.lang = locale;
+  document.title = `${t(profile.name)} | ${t(profile.title)}`;
+  $('meta[name="description"]')?.setAttribute('content', t(profile.description));
+  $('#nav-name').textContent = t(profile.name);
+  $('#nav-mark').textContent = monogramText();
   $('#loader-word').textContent = profile.particleWord;
+  $('#hero-scroll').textContent = ui('scrollHint');
+  $('#hero-role').textContent = t(profile.roles)[roleIndex];
 
   // Social rail (hero, fixed bottom-left)
   $('#social-rail').innerHTML =
     profile.socials
       .map(
         (s) =>
-          `<a href="${s.href}" aria-label="${s.label}" ${
+          `<a href="${s.href}" aria-label="${t(s.label)}" ${
             s.href.startsWith('mailto:') ? '' : 'target="_blank" rel="noopener noreferrer"'
           }>${icon(s.icon, { size: 20 })}</a>`
       )
@@ -33,112 +39,115 @@ function applyProfile() {
 
 /* =================================================================== Nav */
 
-function buildNav() {
-  const links = $('#nav-links');
-  const drawer = $('#nav-drawer');
+// Nav items are keyed by `href` (stable across languages), not by their label.
+let activeNav = navItems[0].href;
+let drawerOpen = false;
 
-  links.innerHTML = navItems
+const syncUnderlines = () => {
+  // Only the active pill shows its underline.
+  $$('.nav-link').forEach((a) => {
+    const u = $('.nav-underline', a);
+    if (u) u.style.display = a.classList.contains('is-active') ? '' : 'none';
+  });
+};
+
+function setActive(href) {
+  activeNav = href;
+  $$('[data-nav]').forEach((a) => a.classList.toggle('is-active', a.dataset.nav === href));
+  syncUnderlines();
+}
+
+function go(e, href) {
+  e.preventDefault();
+  closeDrawer();
+  setActive(href);
+  const id = href.replace('#', '');
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+    history.pushState(null, '', href);
+  } else if (href === '#hero') {
+    window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+    history.pushState(null, '', '/');
+  }
+}
+
+function openDrawer() {
+  const drawer = $('#nav-drawer');
+  drawerOpen = true;
+  drawer.hidden = false;
+  $('#nav-toggle').innerHTML = icon('x', { size: 28 });
+  document.body.style.overflow = 'hidden';
+  if (gsap) {
+    const tl = gsap.timeline();
+    tl.to(drawer, { y: '0%', duration: 0.8, ease: 'power3.inOut' });
+    tl.fromTo(
+      $$('a', drawer),
+      { y: 100, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: 'power3.out' },
+      '-=0.4'
+    );
+  } else {
+    drawer.style.transform = 'translateY(0)';
+  }
+}
+
+function closeDrawer() {
+  if (!drawerOpen) return;
+  const drawer = $('#nav-drawer');
+  drawerOpen = false;
+  $('#nav-toggle').innerHTML = icon('menu', { size: 28 });
+  document.body.style.overflow = '';
+  if (gsap) {
+    gsap.to(drawer, {
+      y: '-100%',
+      duration: 0.8,
+      ease: 'power3.inOut',
+      onComplete: () => { drawer.hidden = true; },
+    });
+  } else {
+    drawer.style.transform = 'translateY(-100%)';
+    drawer.hidden = true;
+  }
+}
+
+/** (Re)builds the nav links and drawer in the current language. Safe to call again. */
+function renderNavLinks() {
+  $('#nav-links').innerHTML = navItems
     .map(
-      (n, i) =>
-        `<a class="nav-link${i === 0 ? ' is-active' : ''}" href="${n.href}" data-nav="${n.name}">${n.name}
+      (n) =>
+        `<a class="nav-link" href="${n.href}" data-nav="${n.href}">${t(n.label)}
          <span class="nav-underline" aria-hidden="true"><i class="haze"></i><i class="edge"></i><i class="core"></i></span></a>`
     )
     .join('');
 
-  drawer.innerHTML = navItems
-    .map((n, i) => `<a href="${n.href}" data-nav="${n.name}"${i === 0 ? ' class="is-active"' : ''}>${n.name}</a>`)
+  $('#nav-drawer').innerHTML = navItems
+    .map((n) => `<a href="${n.href}" data-nav="${n.href}">${t(n.label)}</a>`)
     .join('');
 
-  // Only the active pill shows its underline.
-  const syncUnderlines = () => {
-    $$('.nav-link').forEach((a) => {
-      const u = $('.nav-underline', a);
-      if (u) u.style.display = a.classList.contains('is-active') ? '' : 'none';
-    });
-  };
-  syncUnderlines();
+  // Fresh anchors each time, so no listener piles up.
+  $$('[data-nav]').forEach((a) => a.addEventListener('click', (e) => go(e, a.dataset.nav)));
+  setActive(activeNav);
+}
 
-  function setActive(name) {
-    $$('[data-nav]').forEach((a) => a.classList.toggle('is-active', a.dataset.nav === name));
-    syncUnderlines();
+// Scroll spy — walk sections bottom-up and take the first one we're past.
+function spy() {
+  const probe = window.scrollY + window.innerHeight / 3;
+  if (window.scrollY < 100) return setActive(navItems[0].href);
+  for (const n of [...navItems].reverse()) {
+    const el = document.getElementById(n.href.replace('#', ''));
+    if (el && probe >= el.offsetTop) return setActive(n.href);
   }
+  setActive(navItems[0].href);
+}
 
-  function go(e, href, name) {
-    e.preventDefault();
-    closeDrawer();
-    setActive(name);
-    const id = href.replace('#', '');
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
-      history.pushState(null, '', href);
-    } else if (href === '#hero') {
-      window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
-      history.pushState(null, '', '/');
-    }
-  }
-
-  $$('[data-nav]').forEach((a) => {
-    const item = navItems.find((n) => n.name === a.dataset.nav);
-    a.addEventListener('click', (e) => go(e, item.href, item.name));
-  });
-
-  // Mobile drawer
+/** One-time nav behaviour: drawer toggle, escape key, scroll spy. */
+function initNav() {
   const toggle = $('#nav-toggle');
-  let open = false;
-
-  function openDrawer() {
-    open = true;
-    drawer.hidden = false;
-    toggle.innerHTML = icon('x', { size: 28 });
-    document.body.style.overflow = 'hidden';
-    if (gsap) {
-      const tl = gsap.timeline();
-      tl.to(drawer, { y: '0%', duration: 0.8, ease: 'power3.inOut' });
-      tl.fromTo(
-        $$('a', drawer),
-        { y: 100, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: 'power3.out' },
-        '-=0.4'
-      );
-    } else {
-      drawer.style.transform = 'translateY(0)';
-    }
-  }
-
-  function closeDrawer() {
-    if (!open) return;
-    open = false;
-    toggle.innerHTML = icon('menu', { size: 28 });
-    document.body.style.overflow = '';
-    if (gsap) {
-      gsap.to(drawer, {
-        y: '-100%',
-        duration: 0.8,
-        ease: 'power3.inOut',
-        onComplete: () => { drawer.hidden = true; },
-      });
-    } else {
-      drawer.style.transform = 'translateY(-100%)';
-      drawer.hidden = true;
-    }
-  }
-
   toggle.innerHTML = icon('menu', { size: 28 });
-  toggle.addEventListener('click', () => (open ? closeDrawer() : openDrawer()));
+  toggle.addEventListener('click', () => (drawerOpen ? closeDrawer() : openDrawer()));
   window.addEventListener('keydown', (e) => e.key === 'Escape' && closeDrawer());
 
-  // Scroll spy — walk sections bottom-up and take the first one we're past.
-  const order = [...navItems].reverse();
-  function spy() {
-    const probe = window.scrollY + window.innerHeight / 3;
-    if (window.scrollY < 100) return setActive(navItems[0].name);
-    for (const n of order) {
-      const el = document.getElementById(n.href.replace('#', ''));
-      if (el && probe >= el.offsetTop) return setActive(n.name);
-    }
-    setActive(navItems[0].name);
-  }
   const navEl = $('.nav');
   const syncNavSurface = () => {
     navEl.classList.toggle('is-scrolled', window.scrollY > 40);
@@ -150,25 +159,53 @@ function buildNav() {
   syncNavSurface();
 }
 
+/* ======================================================= Language toggle */
+
+function initLangToggle() {
+  const wrap = $('#lang-toggle');
+  wrap.innerHTML = locales
+    .map(
+      (l) =>
+        `<button type="button" data-lang="${l.code}" lang="${l.code}" title="${l.name}" aria-pressed="false">${l.label}</button>`
+    )
+    .join('');
+
+  const sync = () => {
+    wrap.setAttribute('aria-label', ui('language'));
+    $$('button', wrap).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === getLocale())));
+  };
+
+  wrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-lang]');
+    if (!btn || !setLocale(btn.dataset.lang)) return;
+    renderContent();
+    spy();
+    sync();
+  });
+  sync();
+}
+
 /* ============================================================ Hero roles */
+
+let roleIndex = 0;
 
 function rotateRoles() {
   const el = $('#hero-role');
-  const roles = profile.roles;
   const HOLD = 2500;
   const GAP = 700;
-  let i = 0;
+  // Read the roles on every tick so a language switch mid-cycle just works.
+  const roles = () => t(profile.roles);
 
-  el.textContent = roles[0];
+  el.textContent = roles()[roleIndex];
 
   function cycle() {
     el.classList.add('is-in');
     setTimeout(() => {
-      if (roles.length < 2) return;
+      if (roles().length < 2) return;
       el.classList.remove('is-in');
       setTimeout(() => {
-        i = (i + 1) % roles.length;
-        el.textContent = roles[i];
+        roleIndex = (roleIndex + 1) % roles().length;
+        el.textContent = roles()[roleIndex];
         cycle();
       }, GAP);
     }, HOLD);
@@ -179,6 +216,9 @@ function rotateRoles() {
 /* ============================================================== Reveals */
 
 function initReveals() {
+  // Sections are re-rendered on a language switch; drop triggers bound to the old nodes.
+  window.ScrollTrigger?.getAll().forEach((st) => st.kill());
+
   const els = $$('.reveal');
   if (reduced || !gsap || !window.ScrollTrigger) {
     els.forEach((e) => e.style.opacity = 1);
@@ -209,9 +249,14 @@ function initReveals() {
       onEnter: () => (fill.style.width = `${fill.dataset.width}%`),
     });
   });
+
+  window.ScrollTrigger.refresh();
 }
 
 /* ================================================ Project filter + more */
+
+// Kept outside initProjects so a language switch preserves the chosen filter.
+const projectState = { filter: 'all', expanded: false };
 
 function initProjects() {
   const grid = $('#project-grid');
@@ -222,10 +267,8 @@ function initProjects() {
   const btn = $('#show-more');
   const label = $('span', btn);
 
-  let filter = 'all';
-  let expanded = false;
-
   function render({ animate = true } = {}) {
+    const { filter, expanded } = projectState;
     const matching = cards.filter((c) => filter === 'all' || c.dataset.cat === filter);
     const limit = expanded ? matching.length : projectsVisible;
     const shown = [];
@@ -238,7 +281,7 @@ function initProjects() {
     });
 
     wrap.hidden = matching.length <= projectsVisible;
-    label.textContent = expanded ? 'Show Less' : `Show More (${matching.length - projectsVisible})`;
+    label.textContent = expanded ? ui('showLess') : ui('showMore', { n: matching.length - projectsVisible });
     btn.setAttribute('aria-expanded', String(expanded));
     btn.querySelector('svg')?.replaceWith(
       new DOMParser().parseFromString(icon(expanded ? 'chevronUp' : 'chevronDown', { size: 18 }), 'image/svg+xml')
@@ -251,15 +294,18 @@ function initProjects() {
     window.ScrollTrigger?.refresh();
   }
 
+  const syncChips = () =>
+    chips.forEach((c) => {
+      const on = c.dataset.filter === projectState.filter;
+      c.classList.toggle('is-active', on);
+      c.setAttribute('aria-selected', String(on));
+    });
+
   chips.forEach((chip) =>
     chip.addEventListener('click', () => {
-      filter = chip.dataset.filter;
-      expanded = false;
-      chips.forEach((c) => {
-        const on = c === chip;
-        c.classList.toggle('is-active', on);
-        c.setAttribute('aria-selected', String(on));
-      });
+      projectState.filter = chip.dataset.filter;
+      projectState.expanded = false;
+      syncChips();
       // Every card is re-evaluated, so force the entrance on the whole new set.
       cards.forEach((c) => (c.hidden = true));
       render();
@@ -267,11 +313,12 @@ function initProjects() {
   );
 
   btn.addEventListener('click', () => {
-    expanded = !expanded;
+    projectState.expanded = !projectState.expanded;
     render();
-    if (!expanded) $('#project').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+    if (!projectState.expanded) $('#project').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   });
 
+  syncChips();
   render({ animate: false });
 }
 
@@ -319,8 +366,8 @@ function initContactForm() {
   function succeed() {
     form.outerHTML = `<div class="glass-card form-success">
       <div class="check">${icon('check', { size: 40, strokeWidth: 2.5 })}</div>
-      <h3>${contactCfg.successTitle}</h3>
-      <p>${contactCfg.successBody}</p>
+      <h3>${t(contactCfg.successTitle)}</h3>
+      <p>${t(contactCfg.successBody)}</p>
     </div>`;
   }
 
@@ -336,9 +383,9 @@ function initContactForm() {
 
     // No backend configured — hand off to the visitor's mail client.
     if (contactCfg.mode === 'none') {
-      const body = `From: ${data.name} <${data.email}>\n\n${data.message}`;
+      const body = `${ui('mailFrom')}: ${data.name} <${data.email}>\n\n${data.message}`;
       window.location.href = `mailto:${profile.email}?subject=${encodeURIComponent(
-        contactCfg.subject
+        t(contactCfg.subject)
       )}&body=${encodeURIComponent(body)}`;
       succeed();
       return;
@@ -349,10 +396,10 @@ function initContactForm() {
         ? `https://formsubmit.co/ajax/${profile.email}`
         : contactCfg.endpoint;
 
-    if (!endpoint) return fail('Contact form is not configured yet.');
+    if (!endpoint) return fail(ui('errorNotConfigured'));
 
     btn.disabled = true;
-    label.textContent = 'Sending...';
+    label.textContent = ui('sending');
 
     try {
       const res = await fetch(endpoint, {
@@ -361,19 +408,19 @@ function initContactForm() {
         body: JSON.stringify({
           ...data,
           user_device: navigator.userAgent,
-          _subject: contactCfg.subject,
+          _subject: t(contactCfg.subject),
           _captcha: 'false',
           _template: 'table',
         }),
       });
       const json = await res.json().catch(() => null);
       if (res.ok && (contactCfg.mode !== 'formsubmit' || json?.success)) return succeed();
-      fail(typeof json?.message === 'string' ? json.message : 'Failed to send message. Please try again.');
+      fail(typeof json?.message === 'string' ? json.message : ui('errorFailed'));
     } catch {
-      fail('Network error. Please try again.');
+      fail(ui('errorNetwork'));
     } finally {
       btn.disabled = false;
-      label.textContent = 'Submit';
+      label.textContent = ui('submit');
     }
   });
 }
@@ -425,15 +472,22 @@ function initBackgroundPicker(background) {
 
 /* ================================================================= Boot */
 
-async function boot() {
+/** Everything whose text depends on the language. Runs at boot and on every toggle. */
+function renderContent() {
   applyProfile();
   renderSections($('#sections'));
-  buildNav();
+  renderNavLinks();
   initProjects();
-  initLightbox();
   initContactForm();
-  initBackToTop();
   initReveals();
+}
+
+async function boot() {
+  renderContent();
+  initNav();
+  initLangToggle();
+  initLightbox();
+  initBackToTop();
 
   const params = new URLSearchParams(location.search);
   let hero = null;

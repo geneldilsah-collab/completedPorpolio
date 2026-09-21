@@ -1,13 +1,28 @@
 /**
  * Renders every below-the-fold section from the config data.
  * Plain string templating — no framework, no build step.
+ *
+ * Every text field is passed through `t()` so it may be a { ja, en } object;
+ * chrome strings (headings, buttons, labels) come from `ui()`.
  */
 
 import { about, profile, proficiencyLegend, technologies, projects, projectCategories, contact, footer } from './config.js';
 import { icon } from './icons.js';
+import { t, ui } from './i18n.js';
 
 const esc = (s = '') =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Escapes, then turns `*text*` into an accent span — for the two-tone section headings. */
+const rich = (s, cls) => esc(s).replace(/\*(.+?)\*/g, `<span class="${cls}">$1</span>`);
+
+const initials = (name) =>
+  String(name)
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
 
 /** Deterministic gradient placeholder so cards look intentional without real art. */
 function placeholder(name) {
@@ -18,12 +33,6 @@ function placeholder(name) {
   // negative number, and JS `%` keeps the sign, so the lookup would miss.
   const a = hues[h % hues.length];
   const b = hues[(h >>> 3) % hues.length];
-  const initials = name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
 <defs>
 <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
@@ -38,25 +47,22 @@ function placeholder(name) {
 <rect width="800" height="500" fill="url(#p)"/>
 <circle cx="640" cy="120" r="150" fill="hsl(${a} 70% 50%)" fill-opacity=".13"/>
 <text x="400" y="250" font-family="Inter,system-ui,sans-serif" font-size="130" font-weight="800"
- fill="hsl(${a} 55% 38%)" fill-opacity=".42" text-anchor="middle" dominant-baseline="central">${esc(initials)}</text>
+ fill="hsl(${a} 55% 38%)" fill-opacity=".42" text-anchor="middle" dominant-baseline="central">${esc(initials(name))}</text>
 </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-function monogram(name) {
-  const initials = name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
+/** Initials for the nav mark and the About card: `profile.monogram`, or derived from the name. */
+export const monogramText = () => profile.monogram || initials(t(profile.name, 'en'));
+
+function monogram() {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="800" viewBox="0 0 640 800">
 <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0" stop-color="#e8f1fb"/><stop offset="1" stop-color="#fbfdff"/></linearGradient></defs>
 <rect width="640" height="800" fill="url(#g)"/>
 <circle cx="320" cy="330" r="190" fill="#0ea5e9" fill-opacity=".10"/>
 <text x="320" y="340" font-family="Inter,system-ui,sans-serif" font-size="200" font-weight="800"
- fill="#0369a1" fill-opacity=".38" text-anchor="middle" dominant-baseline="central">${esc(initials)}</text>
+ fill="#0369a1" fill-opacity=".38" text-anchor="middle" dominant-baseline="central">${esc(monogramText())}</text>
 </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
@@ -70,7 +76,7 @@ const dots = (level, max = 5) =>
 /* ------------------------------------------------------------------ About */
 
 function renderAbout() {
-  const photo = profile.photo || monogram(profile.name);
+  const photo = profile.photo || monogram();
   return `
 <section class="section" id="about">
   <div class="glow-bg" style="top:-10%;left:-15%"></div>
@@ -78,17 +84,17 @@ function renderAbout() {
     <div class="about-grid">
       <div class="about-media reveal">
         <div class="photo-frame">
-          <img src="${esc(photo)}" alt="${esc(profile.name)}" loading="lazy" decoding="async">
+          <img src="${esc(photo)}" alt="${esc(t(profile.name))}" loading="lazy" decoding="async">
           <div class="photo-caption">
             ${icon('sparkles', { size: 16 })}
-            <span>${esc(profile.title)}</span>
+            <span>${esc(t(profile.title))}</span>
           </div>
         </div>
       </div>
       <div class="about-copy reveal">
-        <h2>About <span class="accent">Me.</span></h2>
+        <h2>${rich(ui('aboutTitle'), 'accent')}</h2>
         <div class="about-text">
-          ${about.paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}
+          ${t(about.paragraphs).map((p) => `<p>${esc(p)}</p>`).join('')}
         </div>
       </div>
     </div>
@@ -96,11 +102,11 @@ function renderAbout() {
     <div class="about-meta reveal">
       <div class="team-note">
         ${icon('users', { size: 20 })}
-        <p>${esc(about.note)}</p>
+        <p>${esc(t(about.note))}</p>
       </div>
       <div class="stats-grid">
         ${about.stats
-          .map((s) => `<div><h3>${esc(s.value)}</h3><p>${esc(s.label)}</p></div>`)
+          .map((s) => `<div><h3>${esc(t(s.value))}</h3><p>${esc(t(s.label))}</p></div>`)
           .join('')}
       </div>
     </div>
@@ -115,14 +121,14 @@ function renderTechnology() {
 <section class="section" id="technology">
   <div class="shell">
     <div class="reveal">
-      <p class="eyebrow"><span class="eyebrow-dot"></span>Tech stack</p>
-      <h2 class="section-title">My <span class="grad">Technologies</span></h2>
-      <p class="section-lead">My core stack across AI, full-stack development, infrastructure, data, and security.</p>
-      <div class="legend" role="list" aria-label="Proficiency legend">
+      <p class="eyebrow"><span class="eyebrow-dot"></span>${esc(ui('techEyebrow'))}</p>
+      <h2 class="section-title">${rich(ui('techTitle'), 'grad')}</h2>
+      <p class="section-lead">${esc(ui('techLead'))}</p>
+      <div class="legend" role="list" aria-label="${esc(ui('legendLabel'))}">
         ${proficiencyLegend
           .map(
             (l) =>
-              `<div class="legend-item" role="listitem"><span>${esc(l.label)}</span>${dots(l.filled)}</div>`
+              `<div class="legend-item" role="listitem"><span>${esc(t(l.label))}</span>${dots(l.filled)}</div>`
           )
           .join('')}
       </div>
@@ -131,31 +137,31 @@ function renderTechnology() {
     <div class="tech-grid">
       ${technologies
         .map(
-          (t) => `
-      <article class="tech-card reveal" data-accent="${esc(t.accent)}">
+          (tech) => `
+      <article class="tech-card reveal" data-accent="${esc(tech.accent)}">
         <div class="tech-card-head">
-          <div class="tech-icon">${icon(t.icon, { size: 22, strokeWidth: 1.75 })}</div>
-          <h3>${esc(t.title)}</h3>
+          <div class="tech-icon">${icon(tech.icon, { size: 22, strokeWidth: 1.75 })}</div>
+          <h3>${esc(t(tech.title))}</h3>
         </div>
         <div>
-          <div class="prof-meta"><span>Proficiency</span><span class="prof-pct">${t.proficiency}%</span></div>
-          <div class="prof-track"><div class="prof-fill" data-width="${t.proficiency}"></div></div>
+          <div class="prof-meta"><span>${esc(ui('proficiency'))}</span><span class="prof-pct">${tech.proficiency}%</span></div>
+          <div class="prof-track"><div class="prof-fill" data-width="${tech.proficiency}"></div></div>
         </div>
         <div class="skill-grid">
-          ${t.skills
+          ${tech.skills
             .map(
               (s) => `
           <div class="skill-cell">
             <div class="skill-cell-top">
               ${icon(s.icon, { size: 14, strokeWidth: 2 })}
-              <span class="skill-name" title="${esc(s.name)}">${esc(s.name)}</span>
+              <span class="skill-name" title="${esc(t(s.name))}">${esc(t(s.name))}</span>
             </div>
             ${dots(s.level)}
           </div>`
             )
             .join('')}
         </div>
-        <p class="tech-summary">${esc(t.summary)}</p>
+        <p class="tech-summary">${esc(t(tech.summary))}</p>
       </article>`
         )
         .join('')}
@@ -176,19 +182,23 @@ function projectCard(p, i) {
   const kind = badgeOf(p);
   const showLive = kind === 'live' && !!p.liveUrl;
   const showSource = kind === 'github' && hasSource(p);
-  const img = p.image || placeholder(p.name);
+  const name = t(p.name);
+  // Placeholder art is keyed on the English name so the card looks the same in every language.
+  const img = p.image || placeholder(t(p.name, 'en'));
 
   const badge =
     kind === 'live'
-      ? `<span class="badge badge-live"><span class="live-dot"></span>Live</span>`
+      ? `<span class="badge badge-live"><span class="live-dot"></span>${esc(ui('badgeLive'))}</span>`
       : kind === 'github'
-        ? `<span class="badge badge-github" title="Source on GitHub">GitHub</span>`
-        : `<span class="badge badge-private" title="Source not publicly shared">Private</span>`;
+        ? `<span class="badge badge-github" title="${esc(ui('badgeGithubTitle'))}">${esc(ui('badgeGithub'))}</span>`
+        : `<span class="badge badge-private" title="${esc(ui('badgePrivateTitle'))}">${esc(ui('badgePrivate'))}</span>`;
 
-  const label = p.label || projectCategories.find((c) => c.key === p.cat)?.label;
+  const label = t(p.label) || t(projectCategories.find((c) => c.key === p.cat)?.label);
   const category = label
     ? `<span class="card-cat">${esc(label)}</span>`
-    : `<span class="card-cat muted">${kind === 'live' ? 'Product' : kind === 'github' ? 'Open source' : 'Confidential'}</span>`;
+    : `<span class="card-cat muted">${esc(
+        ui(kind === 'live' ? 'catProduct' : kind === 'github' ? 'catOpenSource' : 'catConfidential')
+      )}</span>`;
 
   const footerHtml =
     showLive || showSource
@@ -196,13 +206,15 @@ function projectCard(p, i) {
         ${
           showLive
             ? `<a class="cta-live" href="${esc(p.liveUrl)}" target="_blank" rel="noopener noreferrer"
-                 aria-label="Visit ${esc(p.visitShort || p.name)}"><span class="live-dot"></span>${esc(p.visitShort || 'Visit site')}</a>`
+                 aria-label="${esc(ui('visitAria', { name: p.visitShort || name }))}"><span class="live-dot"></span>${esc(
+                 p.visitShort || ui('visitSite')
+               )}</a>`
             : ''
         }
         ${
           showSource
             ? `<a class="cta-github" href="${esc(p.link)}" target="_blank" rel="noopener noreferrer"
-                 aria-label="${esc(p.name)} on GitHub" title="GitHub">${icon('github', { size: 19 })}</a>`
+                 aria-label="${esc(ui('githubAria', { name }))}" title="GitHub">${icon('github', { size: 19 })}</a>`
             : ''
         }
       </div></div>`
@@ -212,16 +224,16 @@ function projectCard(p, i) {
   <article class="project-card" data-index="${i}" data-cat="${esc(p.cat)}">
     <div class="card-image-wrap">
       ${badge}
-      <button class="card-zoom" type="button" data-zoom="${esc(img)}" data-zoom-alt="${esc(p.name)}"
-              aria-label="Zoom ${esc(p.name)} image">
-        <img src="${esc(img)}" alt="${esc(p.name)}" loading="lazy" decoding="async">
+      <button class="card-zoom" type="button" data-zoom="${esc(img)}" data-zoom-alt="${esc(name)}"
+              aria-label="${esc(ui('zoomAria', { name }))}">
+        <img src="${esc(img)}" alt="${esc(name)}" loading="lazy" decoding="async">
       </button>
       <div class="card-image-overlay" aria-hidden="true"></div>
     </div>
     <div class="card-body">
-      <div>${category}<h3 class="card-title">${esc(p.name)}</h3></div>
-      <p class="card-desc">${esc(p.desc)}</p>
-      <div class="tech-stack" aria-label="Tech stack">
+      <div>${category}<h3 class="card-title">${esc(name)}</h3></div>
+      <p class="card-desc">${esc(t(p.desc))}</p>
+      <div class="tech-stack" aria-label="${esc(ui('techStackAria'))}">
         ${p.tools
           .split(',')
           .map((tool, n) => `<span class="pill" data-accent="${(n % 6) + 1}">${esc(tool.trim())}</span>`)
@@ -243,25 +255,25 @@ function renderProjects() {
   <div class="glow-bg" style="top:20%;right:-20%"></div>
   <div class="shell">
     <div class="reveal">
-      <p class="eyebrow"><span class="eyebrow-dot"></span>Project</p>
-      <h2 class="section-title">Selected <span class="grad">Works</span></h2>
-      <p class="section-lead">Corporate sites, e-commerce stores, business systems, and Web3 products delivered across ${projects.length} projects.</p>
+      <p class="eyebrow"><span class="eyebrow-dot"></span>${esc(ui('projectEyebrow'))}</p>
+      <h2 class="section-title">${rich(ui('projectTitle'), 'grad')}</h2>
+      <p class="section-lead">${esc(ui('projectLead', { n: projects.length }))}</p>
     </div>
-    <div class="filter-bar reveal" role="tablist" aria-label="Filter projects by category">
+    <div class="filter-bar reveal" role="tablist" aria-label="${esc(ui('filterLabel'))}">
       <button class="filter-chip is-active" type="button" role="tab" aria-selected="true" data-filter="all">
-        All <span class="filter-count">${projects.length}</span>
+        ${esc(ui('all'))} <span class="filter-count">${projects.length}</span>
       </button>
       ${cats
         .map(
           (c) => `<button class="filter-chip" type="button" role="tab" aria-selected="false" data-filter="${esc(c.key)}">
-        ${esc(c.label)} <span class="filter-count">${c.count}</span></button>`
+        ${esc(t(c.label))} <span class="filter-count">${c.count}</span></button>`
         )
         .join('')}
     </div>
     <div class="project-grid" id="project-grid">${projects.map(projectCard).join('')}</div>
     <div class="show-more-wrap" id="show-more-wrap">
       <button class="show-more" type="button" id="show-more" aria-expanded="false">
-        <span>Show More</span>${icon('chevronDown', { size: 18 })}
+        <span>${esc(ui('showMore', { n: 0 }))}</span>${icon('chevronDown', { size: 18 })}
       </button>
     </div>
   </div>
@@ -278,16 +290,16 @@ function renderContact() {
   <div class="shell">
     <div class="contact-layout">
       <div class="contact-aside reveal">
-        <p class="eyebrow"><span class="eyebrow-dot"></span>Get in touch</p>
-        <h2>Let's build <span class="grad">something</span>.</h2>
-        <p>Tell me what you are working on and what "done" looks like. I'll reply with an honest read on scope, approach, and timeline.</p>
+        <p class="eyebrow"><span class="eyebrow-dot"></span>${esc(ui('contactEyebrow'))}</p>
+        <h2>${rich(ui('contactTitle'), 'grad')}</h2>
+        <p>${esc(ui('contactText'))}</p>
         <div class="contact-links">
           ${profile.socials
             .map(
               (s) =>
                 `<a class="contact-link" href="${esc(s.href)}" ${
                   s.href.startsWith('mailto:') ? '' : 'target="_blank" rel="noopener noreferrer"'
-                }>${icon(s.icon, { size: 18 })}<span>${esc(s.label)}</span></a>`
+                }>${icon(s.icon, { size: 18 })}<span>${esc(t(s.label))}</span></a>`
             )
             .join('')}
         </div>
@@ -297,25 +309,25 @@ function renderContact() {
         <form class="glass-card contact-form" id="contact-form" novalidate>
           <div class="form-heading">
             ${icon('messageSquare', { size: 20 })}
-            <p>${esc(contact.heading)}</p>
+            <p>${esc(t(contact.heading))}</p>
           </div>
           <input type="text" name="_honey" class="honey" tabindex="-1" autocomplete="off" aria-hidden="true">
           <div class="field">
-            <label for="name">Name</label>
-            <input class="glass-input" type="text" id="name" name="name" placeholder="John Doe" required>
+            <label for="name">${esc(ui('fieldName'))}</label>
+            <input class="glass-input" type="text" id="name" name="name" placeholder="${esc(ui('placeholderName'))}" required>
           </div>
           <div class="field">
-            <label for="email">Email</label>
-            <input class="glass-input" type="email" id="email" name="email" placeholder="john@example.com" required>
+            <label for="email">${esc(ui('fieldEmail'))}</label>
+            <input class="glass-input" type="email" id="email" name="email" placeholder="${esc(ui('placeholderEmail'))}" required>
           </div>
           <div class="field">
-            <label for="message">Message</label>
+            <label for="message">${esc(ui('fieldMessage'))}</label>
             <textarea class="glass-input" id="message" name="message" rows="5"
-                      placeholder="Tell me about your project..." required></textarea>
+                      placeholder="${esc(ui('placeholderMessage'))}" required></textarea>
           </div>
           <p class="form-error" id="form-error" hidden></p>
           <button class="submit-btn" type="submit" id="submit-btn">
-            <span>Submit</span>${icon('send', { size: 18 })}
+            <span>${esc(ui('submit'))}</span>${icon('send', { size: 18 })}
           </button>
         </form>
       </div>
@@ -331,12 +343,12 @@ function renderFooter() {
   return `
 <footer class="footer">
   <div class="footer-inner">
-    <p>&copy; ${year} ${esc(profile.name)}. ${esc(footer.tagline)}</p>
+    <p>&copy; ${year} ${esc(t(profile.name))}. ${esc(t(footer.tagline))}</p>
     <div class="footer-socials">
       ${profile.socials
         .map(
           (s) =>
-            `<a class="social-btn" href="${esc(s.href)}" aria-label="${esc(s.label)}" ${
+            `<a class="social-btn" href="${esc(s.href)}" aria-label="${esc(t(s.label))}" ${
               s.href.startsWith('mailto:') ? '' : 'target="_blank" rel="noopener noreferrer"'
             }>${icon(s.icon, { size: 18 })}</a>`
         )

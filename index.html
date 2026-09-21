@@ -1,24 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f6f8fc" />
 
-    <title>Yukio Amamoto | Full Stack Engineer</title>
+    <!-- Static defaults are Japanese (the initial language); js/main.js updates lang, title and description on toggle. -->
+    <title>Susanoo | フルスタックエンジニア</title>
     <meta
       name="description"
-      content="Yukio Amamoto — full stack engineer with 12 years of experience building corporate sites, e-commerce stores, business systems, and blockchain products. Available for freelance and collaboration."
+      content="Susanoo — 企業サイト、ECサイト、業務システム、ブロックチェーンプロダクトの開発を手がける、経験12年のフルスタックエンジニア。フリーランス案件・協業のご相談を受け付けています。"
     />
     <meta
       name="keywords"
-      content="Yukio Amamoto, Full Stack Engineer, WordPress, Shopify, MakeShop, ecforce, BASE, Craft CMS, PHP, Python, Django, kintone, Solidity, Web3, Portfolio"
+      content="Susanoo, フルスタックエンジニア, Full Stack Engineer, WordPress, Shopify, MakeShop, ecforce, BASE, Craft CMS, PHP, Python, Django, kintone, Solidity, Web3, ポートフォリオ, Portfolio"
     />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Yukio Amamoto | Full Stack Engineer" />
+    <meta property="og:title" content="Susanoo | フルスタックエンジニア" />
     <meta
       property="og:description"
-      content="Full stack engineer with 12 years of experience across corporate sites, e-commerce, business systems, and Web3."
+      content="企業サイト、EC、業務システム、Web3にわたる12年の経験を持つフルスタックエンジニア。"
     />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -26,8 +27,9 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Inter for Latin text; Noto Sans JP fills in for Japanese glyphs Inter does not cover. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap"
       rel="stylesheet"
     />
 
@@ -48,7 +50,7 @@
   <body>
     <!-- Loading screen -->
     <div id="loader">
-      <div class="loader-word" id="loader-word">YUKIO</div>
+      <div class="loader-word" id="loader-word">SUSANOO</div>
       <div class="loader-track"><div class="loader-fill" id="loader-fill"></div></div>
       <div class="loader-pct" id="loader-pct">0%</div>
     </div>
@@ -57,11 +59,14 @@
     <nav class="nav" aria-label="Primary">
       <div class="nav-inner">
         <a class="nav-logo" href="#hero">
-          <span class="nav-logo-mark" id="nav-mark">YA</span>
-          <span id="nav-name">Yukio Amamoto</span>
+          <span class="nav-logo-mark" id="nav-mark">HT</span>
+          <span id="nav-name">Susanoo</span>
         </a>
         <div class="nav-links" id="nav-links"></div>
-        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-controls="nav-drawer"></button>
+        <div class="nav-actions">
+          <div class="lang-toggle" id="lang-toggle" role="group" aria-label="言語"></div>
+          <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu" aria-controls="nav-drawer"></button>
+        </div>
       </div>
     </nav>
     <div class="nav-drawer" id="nav-drawer" hidden></div>
@@ -71,9 +76,9 @@
       <div id="hero-canvas"></div>
       <div class="hero-overlay">
         <div class="hero-role-slot">
-          <h2 class="hero-role" id="hero-role">Full Stack Engineer</h2>
+          <h2 class="hero-role" id="hero-role">フルスタックエンジニア</h2>
         </div>
-        <p class="hero-scroll">Scroll to Explore</p>
+        <p class="hero-scroll" id="hero-scroll">スクロールして見る</p>
       </div>
     </section>
 
@@ -92,6 +97,7 @@
 
     <noscript>
       <p style="padding: 120px 24px; text-align: center; color: #5c7188">
+        このポートフォリオの表示にはJavaScriptを有効にする必要があります。<br />
         This portfolio needs JavaScript enabled to display its content.
       </p>
     </noscript>
@@ -103,9 +109,15 @@
         if (document.body.classList.contains('ready')) return;
         var pct = document.getElementById('loader-pct');
         if (!pct) return;
+        // Mirror js/i18n.js: ?lang= wins, then the saved choice, then Japanese.
+        var ja = true;
+        try {
+          var lang = new URLSearchParams(location.search).get('lang') || localStorage.getItem('portfolio:lang');
+          if (lang) ja = lang === 'ja';
+        } catch (e) {}
         pct.innerHTML =
-          'Loading is taking longer than expected. ' +
-          '<button type="button" class="loader-retry">Reload</button>';
+          (ja ? '読み込みに時間がかかっています。' : 'Loading is taking longer than expected. ') +
+          '<button type="button" class="loader-retry">' + (ja ? '再読み込み' : 'Reload') + '</button>';
         pct.querySelector('button').addEventListener('click', function () {
           location.reload();
         });
